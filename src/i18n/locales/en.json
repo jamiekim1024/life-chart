@@ -1,0 +1,55 @@
+{
+  "app": {
+    "title": "Life Chart",
+    "subtitle": "Visualize your life as a stock-style emotion chart",
+    "tagline": "See your emotional journey at a glance — AI listens with you"
+  },
+  "input": {
+    "placeholder": "Write your life story freely — childhood memories, turning points, joys and sorrows…",
+    "analyze": "Analyze my chart",
+    "analyzing": "AI is reading your life…",
+    "hint": "Please write at least 20 characters"
+  },
+  "chart": {
+    "lifeTitle": "Life emotion index",
+    "score": "Score",
+    "year": "Year",
+    "event": "Event",
+    "futureHope": "Future hope (projected)"
+  },
+  "comparison": {
+    "title": "Similar stock pattern",
+    "recovery": "Recovery — like markets that dip then climb back",
+    "sustain": "Sustain — like markets holding highs with mild swings",
+    "reference": "Reference pattern"
+  },
+  "counseling": {
+    "title": "AI counseling"
+  },
+  "song": {
+    "title": "A song for today",
+    "listen": "Search on YouTube"
+  },
+  "story": {
+    "title": "Instagram story card",
+    "download": "Save story image",
+    "generating": "Generating image…",
+    "scan": "Scan to try it",
+    "footer": "life-chart.app"
+  },
+  "donation": {
+    "label": "Support $0.99",
+    "note": "10% of proceeds go to mental health charities"
+  },
+  "visitor": "Visitors",
+  "errors": {
+    "missingKey": "Gemini API key is missing. Add VITE_GEMINI_API_KEY to your .env file.",
+    "tooShort": "Please write a bit more (at least 20 characters).",
+    "generic": "Something went wrong during analysis. Please try again.",
+    "invalid": "Could not process the analysis. Please try again."
+  },
+  "lang": {
+    "ko": "한국어",
+    "en": "English"
+  }
+}

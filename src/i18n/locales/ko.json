@@ -1,0 +1,55 @@
+{
+  "app": {
+    "title": "Life Chart",
+    "subtitle": "당신의 인생을 주가 차트로 시각화합니다",
+    "tagline": "감정의 흐름을 한눈에, AI가 함께 듣습니다"
+  },
+  "input": {
+    "placeholder": "인생 이야기를 자유롭게 적어주세요. 어린 시절부터 지금까지의 기억, 전환점, 기쁨과 슬픔 모두 좋습니다…",
+    "analyze": "차트 분석하기",
+    "analyzing": "AI가 인생을 읽고 있어요…",
+    "hint": "최소 20자 이상 작성해 주세요"
+  },
+  "chart": {
+    "lifeTitle": "인생 감정 지수",
+    "score": "점수",
+    "year": "연도",
+    "event": "사건",
+    "futureHope": "미래 희망 (예상)"
+  },
+  "comparison": {
+    "title": "유사 주가 패턴",
+    "recovery": "회복형 — 하락 후 반등하는 시장과 비슷한 흐름",
+    "sustain": "지속형 — 고점을 유지하며 흔들리는 시장과 비슷한 흐름",
+    "reference": "참고 패턴"
+  },
+  "counseling": {
+    "title": "AI 상담 메시지"
+  },
+  "song": {
+    "title": "오늘을 위한 한 곡",
+    "listen": "YouTube에서 찾기"
+  },
+  "story": {
+    "title": "인스타 스토리 카드",
+    "download": "스토리 이미지 저장",
+    "generating": "이미지 생성 중…",
+    "scan": "스캔해서 체험하기",
+    "footer": "life-chart.app"
+  },
+  "donation": {
+    "label": "마음 나누기 $0.99",
+    "note": "수익의 10%는 정신건강 관련 단체에 기부됩니다"
+  },
+  "visitor": "방문자",
+  "errors": {
+    "missingKey": "Gemini API 키가 설정되지 않았습니다. .env 파일에 VITE_GEMINI_API_KEY를 추가해 주세요.",
+    "tooShort": "이야기를 조금 더 길게 적어주세요 (20자 이상).",
+    "generic": "분석 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.",
+    "invalid": "분석 결과를 처리하지 못했습니다. 다시 시도해 주세요."
+  },
+  "lang": {
+    "ko": "한국어",
+    "en": "English"
+  }
+}
