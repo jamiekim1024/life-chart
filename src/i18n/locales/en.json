@@ -11,15 +11,18 @@
     "hint": "Please write at least 20 characters"
   },
   "chart": {
-    "lifeTitle": "My Life Stock Price",
+    "lifeTitle": "My Life Stock Price Chart",
     "score": "Score",
     "year": "Year",
     "event": "Event",
     "futureHope": "Future hope (projected)"
   },
   "comparison": {
-    "title": "Stocks that fell, then rose again",
-    "subtitle": "Three US companies that crashed hard and came back — your story can rhyme with theirs"
+    "title": "Alongside Amazon",
+    "subtitle": "Amazon’s 2000 crash and comeback, scaled to your life timeline",
+    "amazonNote": "X-axis: your years. Gray line maps Amazon’s 1997–2021 price path proportionally.",
+    "yourLife": "My life stock",
+    "amazon": "Amazon (AMZN)"
   },
   "counseling": {
     "title": "AI counseling"
@@ -41,7 +44,7 @@
   },
   "visitor": "Visitors",
   "errors": {
-    "missingKey": "Server API key is not configured. Add GEMINI_API_KEY in Vercel (or .env for vercel dev).",
+    "missingKey": "Server is not fully configured. Add GEMINI_API_KEY and SONGS_SHEET_CSV_URL in Vercel.",
     "tooShort": "Please write a bit more (at least 20 characters).",
     "generic": "Something went wrong during analysis. Please try again.",
     "invalid": "Could not process the analysis. Please try again."

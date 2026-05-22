@@ -1,13 +1,41 @@
+/**
+ * Self-contained Vercel serverless handler.
+ * Do not import from ../lib or other local paths — only node_modules.
+ */
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 
-const MODEL = 'gemini-2.5-flash'
+const MODEL = 'gemini-2.0-flash'
+
+/** Public song list (override via SONGS_SHEET_CSV_URL on Vercel). */
+const DEFAULT_SONGS_SHEET_CSV_URL =
+  'https://docs.google.com/spreadsheets/d/e/2PACX-1vQd3VYvjuqSw4hj-5pPLzr-OH1-OaSJSKiWpYi_n9aKm7Z8Y1tqklrNKI3Rvqu3DtqXmDDDUZvLQMC9/pub?output=csv'
+
+type CanonicalMood = 'sad' | 'hopeful' | 'joyful' | 'nostalgic'
+
+const MOODS: CanonicalMood[] = ['sad', 'hopeful', 'joyful', 'nostalgic']
+
+/** Maps legacy sheet / AI mood tags to the 4 canonical values. */
+const MOOD_ALIASES: Record<string, CanonicalMood> = {
+  sad: 'sad',
+  hopeful: 'hopeful',
+  joyful: 'joyful',
+  nostalgic: 'nostalgic',
+  melancholic: 'sad',
+  anxious: 'sad',
+  resilient: 'hopeful',
+  healing: 'hopeful',
+  reflective: 'hopeful',
+  grateful: 'hopeful',
+}
 
 type AnalyzeErrorCode =
   | 'MISSING_API_KEY'
+  | 'MISSING_SONGS_SHEET'
   | 'STORY_TOO_SHORT'
   | 'INVALID_TIMELINE'
   | 'GEMINI_ERROR'
+  | 'SONGS_FETCH_FAILED'
 
 class AnalyzeError extends Error {
   readonly code: AnalyzeErrorCode
@@ -36,27 +64,36 @@ interface LifeAnalysis {
   }
   detectedLanguage: 'ko' | 'en'
   currentScore: number
+  mood: string
 }
 
 interface GeminiRawResponse {
   timeline: LifePoint[]
   counseling: string
-  song: {
-    title: string
-    artist: string
-    reason: string
-  }
+  mood: string
+  songReason: string
   detectedLanguage?: 'ko' | 'en'
+}
+
+interface SheetSong {
+  title: string
+  artist: string
+  youtube_url: string
+  mood: string
+  language: string
 }
 
 function statusForCode(code: string): number {
   switch (code) {
     case 'MISSING_API_KEY':
+    case 'MISSING_SONGS_SHEET':
       return 503
     case 'STORY_TOO_SHORT':
       return 400
     case 'INVALID_TIMELINE':
       return 422
+    case 'SONGS_FETCH_FAILED':
+      return 502
     default:
       return 500
   }
@@ -73,8 +110,130 @@ function parseJsonFromModel<T>(raw: string): T {
   return JSON.parse(jsonText) as T
 }
 
-function youtubeSearchUrl(query: string): string {
-  return `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`
+function normalizeKey(s: string): string {
+  return s.trim().toLowerCase().replace(/\s+/g, '_')
+}
+
+function parseCsvLine(line: string): string[] {
+  const fields: string[] = []
+  let current = ''
+  let inQuotes = false
+
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i]
+    if (ch === '"') {
+      inQuotes = !inQuotes
+      continue
+    }
+    if (ch === ',' && !inQuotes) {
+      fields.push(current.trim())
+      current = ''
+      continue
+    }
+    current += ch
+  }
+  fields.push(current.trim())
+  return fields
+}
+
+function parseSongsCsv(csv: string): SheetSong[] {
+  const lines = csv.split(/\r?\n/).filter((l) => l.trim())
+  if (lines.length < 2) return []
+
+  const headers = parseCsvLine(lines[0]).map(normalizeKey)
+  const idx = {
+    title: headers.indexOf('title'),
+    artist: headers.indexOf('artist'),
+    youtube_url: headers.indexOf('youtube_url'),
+    mood: headers.indexOf('mood'),
+    language: headers.indexOf('language'),
+  }
+
+  if (
+    idx.title < 0 ||
+    idx.artist < 0 ||
+    idx.youtube_url < 0 ||
+    idx.mood < 0 ||
+    idx.language < 0
+  ) {
+    return []
+  }
+
+  const songs: SheetSong[] = []
+  for (let i = 1; i < lines.length; i++) {
+    const cols = parseCsvLine(lines[i])
+    if (cols.length < headers.length) continue
+    const title = cols[idx.title]
+    const artist = cols[idx.artist]
+    const youtube_url = cols[idx.youtube_url]
+    if (!title || !artist || !youtube_url) continue
+    songs.push({
+      title,
+      artist,
+      youtube_url,
+      mood: cols[idx.mood],
+      language: cols[idx.language],
+    })
+  }
+  return songs
+}
+
+function sheetLanguageCode(lang: 'ko' | 'en'): string {
+  return lang === 'ko' ? 'KO' : 'EN'
+}
+
+function normalizeMood(m: string): string {
+  return m.trim().toLowerCase()
+}
+
+function canonicalizeMood(raw: string): CanonicalMood {
+  return MOOD_ALIASES[normalizeMood(raw)] ?? 'hopeful'
+}
+
+let songsCache: { fetchedAt: number; songs: SheetSong[] } | null = null
+const CACHE_MS = 5 * 60 * 1000
+
+async function fetchSongsFromSheet(): Promise<SheetSong[]> {
+  const url =
+    process.env.SONGS_SHEET_CSV_URL?.trim() || DEFAULT_SONGS_SHEET_CSV_URL
+
+  if (songsCache && Date.now() - songsCache.fetchedAt < CACHE_MS) {
+    return songsCache.songs
+  }
+
+  const res = await fetch(url, { headers: { Accept: 'text/csv' } })
+  if (!res.ok) {
+    throw new AnalyzeError('SONGS_FETCH_FAILED')
+  }
+
+  const csv = await res.text()
+  const songs = parseSongsCsv(csv)
+  if (songs.length === 0) {
+    throw new AnalyzeError('SONGS_FETCH_FAILED', 'No songs parsed from sheet')
+  }
+
+  songsCache = { fetchedAt: Date.now(), songs }
+  return songs
+}
+
+function pickSong(
+  songs: SheetSong[],
+  mood: CanonicalMood,
+  lang: 'ko' | 'en',
+): SheetSong {
+  const langCode = sheetLanguageCode(lang)
+
+  const inLang = songs.filter(
+    (s) => s.language.trim().toUpperCase() === langCode,
+  )
+
+  const moodMatch = inLang.filter(
+    (s) => canonicalizeMood(s.mood) === mood,
+  )
+  const pool = moodMatch.length > 0 ? moodMatch : inLang
+  const fallback = pool.length > 0 ? pool : songs
+
+  return fallback[Math.floor(Math.random() * fallback.length)]
 }
 
 function getClient(): GoogleGenerativeAI {
@@ -87,10 +246,7 @@ function getClient(): GoogleGenerativeAI {
 
 function buildPrompt(story: string, lang: 'ko' | 'en'): string {
   const languageName = lang === 'ko' ? 'Korean' : 'English'
-  const songRule =
-    lang === 'ko'
-      ? 'Recommend ONE Korean classic song (한국 고전/명곡, 1970s–2000s era preferred). Song title and artist in Korean.'
-      : 'Recommend ONE English classic song from the 1960s–1990s. Song title and artist in English.'
+  const moodList = MOODS.join(', ') // sad, hopeful, joyful, nostalgic only
 
   const labelRule =
     lang === 'ko'
@@ -99,20 +255,22 @@ function buildPrompt(story: string, lang: 'ko' | 'en'): string {
 
   return `You are a compassionate life coach and data analyst. Analyze the user's life story and respond ONLY with valid JSON (no markdown).
 
-CRITICAL: The user selected UI language is ${languageName}. Write ALL text fields (timeline labels, counseling, song title/artist/reason) ONLY in ${languageName}. Do not mix languages.
+CRITICAL: The user selected UI language is ${languageName}. Write ALL text fields (timeline labels, counseling, songReason) ONLY in ${languageName}. Do not mix languages.
 
 Rules:
 - Extract 6–12 key life moments as timeline points with year (integer), score (0–100 emotion/wellbeing), and ${labelRule}.
 - Years must be realistic and ordered ascending.
 - counseling: 2–4 warm, practical sentences in ${languageName}.
-- ${songRule}
+- mood: pick exactly ONE from [${moodList}] only (no other values). sad = sorrow/anxiety; hopeful = resilience/growth; joyful = happiness; nostalgic = memory/longing.
+- songReason: one sentence in ${languageName} explaining why a song with that mood would comfort the user (do not name a specific song).
 - detectedLanguage: "${lang}"
 
 JSON schema:
 {
   "timeline": [{"year": 2010, "score": 45, "label": "..."}],
   "counseling": "...",
-  "song": {"title": "...", "artist": "...", "reason": "..."},
+  "mood": "hopeful",
+  "songReason": "...",
   "detectedLanguage": "${lang}"
 }
 
@@ -122,7 +280,7 @@ ${story}
 """`
 }
 
-async function analyzeStory(
+async function runLifeAnalysis(
   story: string,
   lang: 'ko' | 'en',
 ): Promise<LifeAnalysis> {
@@ -166,18 +324,23 @@ async function analyzeStory(
       throw new AnalyzeError('INVALID_TIMELINE')
     }
 
-    const currentScore = timeline[timeline.length - 1].score
+    const mood = canonicalizeMood(parsed.mood ?? 'hopeful')
+
+    const sheetSongs = await fetchSongsFromSheet()
+    const picked = pickSong(sheetSongs, mood, lang)
     const resolvedLang = parsed.detectedLanguage === 'en' ? 'en' : lang
-    const searchQuery = `${parsed.song.title} ${parsed.song.artist}`
+
+    const currentScore = timeline[timeline.length - 1].score
 
     return {
       timeline,
       counseling: parsed.counseling,
+      mood,
       song: {
-        title: parsed.song.title,
-        artist: parsed.song.artist,
-        reason: parsed.song.reason,
-        youtubeSearchUrl: youtubeSearchUrl(searchQuery),
+        title: picked.title,
+        artist: picked.artist,
+        reason: parsed.songReason,
+        youtubeSearchUrl: picked.youtube_url,
       },
       detectedLanguage: resolvedLang,
       currentScore,
@@ -222,7 +385,7 @@ export default async function handler(
   }
 
   try {
-    const analysis = await analyzeStory(story, language)
+    const analysis = await runLifeAnalysis(story, language)
     res.status(200).json(analysis)
   } catch (err) {
     if (err instanceof AnalyzeError) {

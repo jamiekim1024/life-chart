@@ -17,6 +17,7 @@ export interface LifeAnalysis {
   song: SongRecommendation
   detectedLanguage: 'ko' | 'en'
   currentScore: number
+  mood?: string
 }
 
 export interface ChartPoint {

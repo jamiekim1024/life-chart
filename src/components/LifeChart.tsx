@@ -10,7 +10,11 @@ import {
   YAxis,
 } from 'recharts'
 import type { LifePoint } from '@/types'
-import { buildLifeChartData, FUTURE_HOPE_YEAR } from '@/lib/chartData'
+import {
+  buildLifeChartData,
+  FUTURE_HOPE_YEAR,
+  getChartYMax,
+} from '@/lib/chartData'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ChartTooltip } from '@/components/ChartTooltip'
 
@@ -21,6 +25,10 @@ interface LifeChartProps {
 export function LifeChart({ data }: LifeChartProps) {
   const { t } = useTranslation()
   const chartData = useMemo(() => buildLifeChartData(data), [data])
+  const yMax = useMemo(
+    () => getChartYMax(data, chartData),
+    [data, chartData],
+  )
   const xMax = Math.max(
     FUTURE_HOPE_YEAR,
     ...chartData.map((p) => p.year),
@@ -52,7 +60,7 @@ export function LifeChart({ data }: LifeChartProps) {
                 tickLine={false}
               />
               <YAxis
-                domain={[0, 100]}
+                domain={[0, yMax]}
                 tick={{ fill: '#737373', fontSize: 12 }}
                 axisLine={false}
                 tickLine={false}
@@ -69,12 +77,13 @@ export function LifeChart({ data }: LifeChartProps) {
                 dot={{ r: 4, fill: '#0a0a0a', strokeWidth: 0 }}
                 activeDot={{ r: 6, fill: '#0a0a0a' }}
                 connectNulls={false}
+                isAnimationActive={false}
               />
               <Line
-                type="natural"
+                type="monotone"
                 dataKey="futureScore"
                 stroke="#a3a3a3"
-                strokeWidth={2}
+                strokeWidth={2.5}
                 strokeDasharray="6 4"
                 dot={false}
                 connectNulls

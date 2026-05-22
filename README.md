@@ -8,7 +8,7 @@ Turn your life story into an emotional stock-style chart with AI counseling, son
 - Vercel serverless API (`api/analyze.ts`, self-contained) for Gemini
 - Tailwind CSS v4 + shadcn-style UI primitives
 - Recharts
-- Google Gemini (`gemini-2.5-flash`, server-side only)
+- Google Gemini (`gemini-2.0-flash`, server-side only)
 - i18n (KO / EN)
 - CountAPI visitor counter
 - html-to-image + QR code for story cards
@@ -27,7 +27,15 @@ npm install
 cp .env.example .env
 ```
 
-Set `GEMINI_API_KEY` in `.env` (no `VITE_` prefix — the key must stay on the server).
+Set `GEMINI_API_KEY` and `SONGS_SHEET_CSV_URL` in `.env` (no `VITE_` prefix — secrets stay on the server).
+
+### Google Sheet for songs
+
+1. Create a sheet with columns: `title`, `artist`, `youtube_url`, `mood`, `language` (`KO` or `EN`)
+2. **File → Share → Publish to web → CSV**
+3. Paste the published CSV URL into `SONGS_SHEET_CSV_URL`
+
+Mood column must use one of: `sad`, `hopeful`, `joyful`, `nostalgic`. Legacy tags in the sheet are still accepted (`melancholic`/`anxious` → sad; `resilient`/`healing`/`reflective`/`grateful` → hopeful).
 
 3. Local development with API routes:
 
@@ -37,7 +45,7 @@ npm run dev:vercel
 
 This runs Vercel dev (frontend + `/api/analyze`). Alternatively, run `vercel dev` in one terminal and `npm run dev` in another; Vite proxies `/api` to port 3000.
 
-4. Deploy on Vercel and add `GEMINI_API_KEY` in Project → Settings → Environment Variables.
+4. Deploy on Vercel and add `GEMINI_API_KEY` and `SONGS_SHEET_CSV_URL` in Project → Settings → Environment Variables.
 
 ## Scripts
 

@@ -17,6 +17,8 @@ import { Textarea } from '@/components/ui/textarea'
 function mapError(code: string, t: (key: string) => string): string {
   switch (code) {
     case 'MISSING_API_KEY':
+    case 'MISSING_SONGS_SHEET':
+    case 'SONGS_FETCH_FAILED':
       return t('errors.missingKey')
     case 'STORY_TOO_SHORT':
       return t('errors.tooShort')
