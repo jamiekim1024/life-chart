@@ -66,7 +66,7 @@ export function StoryCard({ analysis, appUrl }: StoryCardProps) {
         >
           <div className="flex flex-1 flex-col p-5">
             <p className="text-[10px] font-medium tracking-widest text-neutral-400 uppercase">
-              Life Chart
+              {t('app.title')}
             </p>
             <h4 className="mt-1 text-lg font-bold leading-tight">
               {t('chart.lifeTitle')}

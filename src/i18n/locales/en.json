@@ -11,17 +11,15 @@
     "hint": "Please write at least 20 characters"
   },
   "chart": {
-    "lifeTitle": "Life emotion index",
+    "lifeTitle": "My Life Stock Price",
     "score": "Score",
     "year": "Year",
     "event": "Event",
     "futureHope": "Future hope (projected)"
   },
   "comparison": {
-    "title": "Similar stock pattern",
-    "recovery": "Recovery — like markets that dip then climb back",
-    "sustain": "Sustain — like markets holding highs with mild swings",
-    "reference": "Reference pattern"
+    "title": "Stocks that fell, then rose again",
+    "subtitle": "Three US companies that crashed hard and came back — your story can rhyme with theirs"
   },
   "counseling": {
     "title": "AI counseling"

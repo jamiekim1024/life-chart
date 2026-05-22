@@ -1,10 +1,15 @@
 import type { LifeAnalysis } from '@/types'
 
+export type UiLanguage = 'ko' | 'en'
+
 interface AnalyzeErrorResponse {
   error?: string
 }
 
-export async function analyzeLifeStory(story: string): Promise<LifeAnalysis> {
+export async function analyzeLifeStory(
+  story: string,
+  language: UiLanguage,
+): Promise<LifeAnalysis> {
   const trimmed = story.trim()
   if (trimmed.length < 20) {
     throw new Error('STORY_TOO_SHORT')
@@ -13,7 +18,7 @@ export async function analyzeLifeStory(story: string): Promise<LifeAnalysis> {
   const res = await fetch('/api/analyze', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ story: trimmed }),
+    body: JSON.stringify({ story: trimmed, language }),
   })
 
   const data = (await res.json()) as LifeAnalysis | AnalyzeErrorResponse

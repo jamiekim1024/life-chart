@@ -32,7 +32,8 @@ function mapError(code: string, t: (key: string) => string): string {
 }
 
 export default function App() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const uiLang = i18n.language.startsWith('en') ? 'en' : 'ko'
   const [story, setStory] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -45,7 +46,7 @@ export default function App() {
     setError(null)
     setLoading(true)
     try {
-      const result = await analyzeLifeStory(story)
+      const result = await analyzeLifeStory(story, uiLang)
       setAnalysis(result)
     } catch (e) {
       const message =
@@ -116,10 +117,7 @@ export default function App() {
         {analysis ? (
           <section className="space-y-6">
             <LifeChart data={analysis.timeline} />
-            <ComparisonChart
-              timeline={analysis.timeline}
-              currentScore={analysis.currentScore}
-            />
+            <ComparisonChart timeline={analysis.timeline} />
             <CounselingCard message={analysis.counseling} />
             <SongRecommendation song={analysis.song} />
             <StoryCard analysis={analysis} appUrl={appUrl} />

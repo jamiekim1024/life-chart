@@ -71,7 +71,7 @@ export function LifeChart({ data }: LifeChartProps) {
                 connectNulls={false}
               />
               <Line
-                type="monotone"
+                type="natural"
                 dataKey="futureScore"
                 stroke="#a3a3a3"
                 strokeWidth={2}

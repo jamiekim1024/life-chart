@@ -10,23 +10,30 @@ export interface LifeChartRow {
 }
 
 function hopeTargetScore(lastScore: number): number {
-  return Math.min(100, Math.round(lastScore + Math.max(15, (100 - lastScore) * 0.4)))
+  return Math.min(
+    100,
+    Math.round(lastScore + Math.max(22, (100 - lastScore) * 0.6)),
+  )
 }
 
-function futureYears(fromYear: number, toYear: number): number[] {
+/** Ease-out quart: accelerates upward toward the end (optimistic recovery). */
+function easeOutQuart(t: number): number {
+  return 1 - Math.pow(1 - t, 4)
+}
+
+function futureYearPoints(fromYear: number, toYear: number): number[] {
   const span = toYear - fromYear
   if (span <= 0) return []
 
-  const mids: number[] = []
-  if (span > 6) {
-    mids.push(fromYear + Math.floor(span * 0.35), fromYear + Math.floor(span * 0.65))
-  } else if (span > 2) {
-    mids.push(fromYear + Math.floor(span / 2))
+  const steps = Math.min(10, Math.max(5, Math.round(span / 2)))
+  const years: number[] = []
+  for (let i = 1; i <= steps; i++) {
+    years.push(Math.round(fromYear + (span * i) / steps))
   }
-
-  return [...new Set([...mids, toYear].filter((y) => y > fromYear))].sort(
-    (a, b) => a - b,
-  )
+  if (years[years.length - 1] !== toYear) {
+    years.push(toYear)
+  }
+  return [...new Set(years)].sort((a, b) => a - b)
 }
 
 /** Merges timeline with dashed future hope curve ending at 2030. */
@@ -45,12 +52,17 @@ export function buildLifeChartData(data: LifePoint[]): LifeChartRow[] {
 
   if (last.year >= FUTURE_HOPE_YEAR) return rows
 
-  for (const year of futureYears(last.year, FUTURE_HOPE_YEAR)) {
-    const t = (year - last.year) / (FUTURE_HOPE_YEAR - last.year)
-    const eased = Math.pow(t, 0.85)
+  const years = futureYearPoints(last.year, FUTURE_HOPE_YEAR)
+  const span = FUTURE_HOPE_YEAR - last.year
+
+  for (const year of years) {
+    const t = (year - last.year) / span
+    const eased = easeOutQuart(t)
     rows.push({
       year,
-      futureScore: Math.round(last.score + (targetScore - last.score) * eased),
+      futureScore: Math.round(
+        last.score + (targetScore - last.score) * eased,
+      ),
       label: '',
     })
   }

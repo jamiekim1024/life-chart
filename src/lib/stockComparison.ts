@@ -1,62 +1,53 @@
-import type { ChartPoint } from '@/types'
+export interface RecoveryStock {
+  id: string
+  name: string
+  ticker: string
+  storyKo: string
+  storyEn: string
+  /** Normalized 0–100 price path (dip → recovery). */
+  scores: number[]
+}
 
-/** Recovery pattern: dip then gradual climb (like post-crash markets). */
-const RECOVERY_TEMPLATE: { t: number; v: number }[] = [
-  { t: 0, v: 72 },
-  { t: 1, v: 58 },
-  { t: 2, v: 38 },
-  { t: 3, v: 28 },
-  { t: 4, v: 35 },
-  { t: 5, v: 48 },
-  { t: 6, v: 55 },
-  { t: 7, v: 62 },
-  { t: 8, v: 68 },
-  { t: 9, v: 74 },
+/** Hardcoded dip-and-recovery arcs inspired by real US market histories. */
+export const RECOVERY_STOCKS: RecoveryStock[] = [
+  {
+    id: 'amzn',
+    name: 'Amazon',
+    ticker: 'AMZN',
+    storyKo:
+      '2000년 닷컴 버블로 90% 이상 폭락했지만, 결국 세계 최고 기업 중 하나가 되었습니다.',
+    storyEn:
+      'It crashed over 90% in the 2000 dot-com bust, then grew into one of the world’s most valuable companies.',
+    scores: [92, 78, 55, 28, 18, 32, 48, 62, 78, 88, 100],
+  },
+  {
+    id: 'aapl',
+    name: 'Apple',
+    ticker: 'AAPL',
+    storyKo:
+      '1990년대 파산 위기 직전까지 갔지만, 혁신의 연속으로 역사상 가장 성공적인 기업 중 하나가 되었습니다.',
+    storyEn:
+      'It nearly went bankrupt in the 1990s, then rebounded through relentless innovation into an all-time great.',
+    scores: [22, 18, 25, 35, 42, 38, 55, 68, 82, 94, 100],
+  },
+  {
+    id: 'nflx',
+    name: 'Netflix',
+    ticker: 'NFLX',
+    storyKo:
+      '2011년 위기로 주가가 급락했지만, 오리지널 콘텐츠로 글로벌 스트리밍 1위를 차지했습니다.',
+    storyEn:
+      'Its stock plunged in the 2011 crisis, then climbed back to lead global streaming through original content.',
+    scores: [88, 82, 75, 24, 30, 45, 58, 72, 85, 96, 100],
+  },
 ]
 
-/** Sustain pattern: elevated plateau with mild volatility. */
-const SUSTAIN_TEMPLATE: { t: number; v: number }[] = [
-  { t: 0, v: 58 },
-  { t: 1, v: 65 },
-  { t: 2, v: 72 },
-  { t: 3, v: 78 },
-  { t: 4, v: 82 },
-  { t: 5, v: 79 },
-  { t: 6, v: 85 },
-  { t: 7, v: 83 },
-  { t: 8, v: 88 },
-  { t: 9, v: 86 },
-]
-
-function buildSeries(
-  template: { t: number; v: number }[],
+export function getRecoveryStockChartData(
+  stock: RecoveryStock,
   startYear: number,
-  anchorScore: number,
-): ChartPoint[] {
-  const last = template[template.length - 1].v
-  const scale = anchorScore / last
-
-  return template.map((point) => ({
-    year: startYear + point.t,
-    score: Math.round(Math.min(100, Math.max(0, point.v * scale))),
+): { year: number; score: number }[] {
+  return stock.scores.map((score, i) => ({
+    year: startYear + i,
+    score,
   }))
-}
-
-export type ComparisonMode = 'recovery' | 'sustain'
-
-export function getComparisonMode(currentScore: number): ComparisonMode {
-  return currentScore < 55 ? 'recovery' : 'sustain'
-}
-
-export function getComparisonChart(
-  mode: ComparisonMode,
-  startYear: number,
-  currentScore: number,
-): ChartPoint[] {
-  const template = mode === 'recovery' ? RECOVERY_TEMPLATE : SUSTAIN_TEMPLATE
-  return buildSeries(template, startYear, currentScore)
-}
-
-export function getComparisonLabelKey(mode: ComparisonMode): string {
-  return mode === 'recovery' ? 'comparison.recovery' : 'comparison.sustain'
 }

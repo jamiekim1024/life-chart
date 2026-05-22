@@ -62,10 +62,8 @@ function statusForCode(code: string): number {
   }
 }
 
-function detectInputLanguage(text: string): 'ko' | 'en' {
-  const koreanChars = (text.match(/[\u3131-\uD79D]/g) ?? []).length
-  const latinChars = (text.match(/[a-zA-Z]/g) ?? []).length
-  return koreanChars >= latinChars ? 'ko' : 'en'
+function parseUiLanguage(raw: unknown): 'ko' | 'en' {
+  return raw === 'en' ? 'en' : 'ko'
 }
 
 function parseJsonFromModel<T>(raw: string): T {
@@ -87,27 +85,35 @@ function getClient(): GoogleGenerativeAI {
   return new GoogleGenerativeAI(key)
 }
 
-function buildPrompt(story: string, inputLang: 'ko' | 'en'): string {
+function buildPrompt(story: string, lang: 'ko' | 'en'): string {
+  const languageName = lang === 'ko' ? 'Korean' : 'English'
   const songRule =
-    inputLang === 'ko'
-      ? 'Recommend ONE Korean classic song (한국 고전/명곡, 1970s–2000s era preferred).'
-      : 'Recommend ONE English classic song from the 1960s–1990s.'
+    lang === 'ko'
+      ? 'Recommend ONE Korean classic song (한국 고전/명곡, 1970s–2000s era preferred). Song title and artist in Korean.'
+      : 'Recommend ONE English classic song from the 1960s–1990s. Song title and artist in English.'
+
+  const labelRule =
+    lang === 'ko'
+      ? 'label: vivid Korean phrase for the life moment (no year prefix), like "호주 브리스번으로 이주, 새로운 시작을 꿈꾸던 시절" (max 55 chars)'
+      : 'label: vivid English phrase for the life moment (no year prefix), like "moving abroad and daring to start over" (max 55 chars)'
 
   return `You are a compassionate life coach and data analyst. Analyze the user's life story and respond ONLY with valid JSON (no markdown).
 
+CRITICAL: The user selected UI language is ${languageName}. Write ALL text fields (timeline labels, counseling, song title/artist/reason) ONLY in ${languageName}. Do not mix languages.
+
 Rules:
-- Extract 6–12 key life moments as timeline points with year (integer), score (0–100 emotion/wellbeing), and label (short event summary, max 40 chars).
+- Extract 6–12 key life moments as timeline points with year (integer), score (0–100 emotion/wellbeing), and ${labelRule}.
 - Years must be realistic and ordered ascending.
-- counseling: 2–4 warm, practical sentences in the same language as the user's story (${inputLang === 'ko' ? 'Korean' : 'English'}).
+- counseling: 2–4 warm, practical sentences in ${languageName}.
 - ${songRule}
-- detectedLanguage: "${inputLang}"
+- detectedLanguage: "${lang}"
 
 JSON schema:
 {
   "timeline": [{"year": 2010, "score": 45, "label": "..."}],
   "counseling": "...",
   "song": {"title": "...", "artist": "...", "reason": "..."},
-  "detectedLanguage": "${inputLang}"
+  "detectedLanguage": "${lang}"
 }
 
 User life story:
@@ -116,7 +122,10 @@ ${story}
 """`
 }
 
-async function analyzeStory(story: string): Promise<LifeAnalysis> {
+async function analyzeStory(
+  story: string,
+  lang: 'ko' | 'en',
+): Promise<LifeAnalysis> {
   const trimmed = story.trim()
   if (trimmed.length < 20) {
     throw new AnalyzeError('STORY_TOO_SHORT')
@@ -124,8 +133,6 @@ async function analyzeStory(story: string): Promise<LifeAnalysis> {
   if (trimmed.length > 12000) {
     throw new AnalyzeError('STORY_TOO_SHORT', 'Story exceeds maximum length')
   }
-
-  const inputLang = detectInputLanguage(trimmed)
 
   try {
     const genAI = getClient()
@@ -137,7 +144,7 @@ async function analyzeStory(story: string): Promise<LifeAnalysis> {
       },
     })
 
-    const result = await model.generateContent(buildPrompt(trimmed, inputLang))
+    const result = await model.generateContent(buildPrompt(trimmed, lang))
     const text = result.response.text()
     const parsed = parseJsonFromModel<GeminiRawResponse>(text)
 
@@ -160,7 +167,7 @@ async function analyzeStory(story: string): Promise<LifeAnalysis> {
     }
 
     const currentScore = timeline[timeline.length - 1].score
-    const lang = parsed.detectedLanguage ?? inputLang
+    const resolvedLang = parsed.detectedLanguage === 'en' ? 'en' : lang
     const searchQuery = `${parsed.song.title} ${parsed.song.artist}`
 
     return {
@@ -172,7 +179,7 @@ async function analyzeStory(story: string): Promise<LifeAnalysis> {
         reason: parsed.song.reason,
         youtubeSearchUrl: youtubeSearchUrl(searchQuery),
       },
-      detectedLanguage: lang,
+      detectedLanguage: resolvedLang,
       currentScore,
     }
   } catch (err) {
@@ -201,10 +208,13 @@ export default async function handler(
     return
   }
 
-  const story =
+  const body =
     typeof req.body === 'string'
-      ? (JSON.parse(req.body) as { story?: string }).story
-      : (req.body as { story?: string } | undefined)?.story
+      ? (JSON.parse(req.body) as { story?: string; language?: string })
+      : (req.body as { story?: string; language?: string } | undefined)
+
+  const story = body?.story
+  const language = parseUiLanguage(body?.language)
 
   if (typeof story !== 'string') {
     res.status(400).json({ error: 'INVALID_BODY' })
@@ -212,7 +222,7 @@ export default async function handler(
   }
 
   try {
-    const analysis = await analyzeStory(story)
+    const analysis = await analyzeStory(story, language)
     res.status(200).json(analysis)
   } catch (err) {
     if (err instanceof AnalyzeError) {
