@@ -5,7 +5,7 @@ Turn your life story into an emotional stock-style chart with AI counseling, son
 ## Tech stack
 
 - React + Vite + TypeScript
-- Vercel serverless API (`api/analyze.ts`) for Gemini
+- Vercel serverless API (`api/analyze.ts`, self-contained) for Gemini
 - Tailwind CSS v4 + shadcn-style UI primitives
 - Recharts
 - Google Gemini (`gemini-2.5-flash`, server-side only)
