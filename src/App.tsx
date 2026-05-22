@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Loader2 } from 'lucide-react'
-import { analyzeLifeStory } from '@/lib/gemini'
+import { analyzeLifeStory } from '@/lib/analyze'
 import type { LifeAnalysis } from '@/types'
 import { LanguageToggle } from '@/components/LanguageToggle'
 import { VisitorCounter } from '@/components/VisitorCounter'
@@ -22,6 +22,10 @@ function mapError(code: string, t: (key: string) => string): string {
       return t('errors.tooShort')
     case 'INVALID_TIMELINE':
       return t('errors.invalid')
+    case 'GEMINI_ERROR':
+    case 'INVALID_BODY':
+    case 'METHOD_NOT_ALLOWED':
+      return t('errors.generic')
     default:
       return t('errors.generic')
   }

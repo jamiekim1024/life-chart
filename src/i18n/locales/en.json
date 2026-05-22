@@ -43,7 +43,7 @@
   },
   "visitor": "Visitors",
   "errors": {
-    "missingKey": "Gemini API key is missing. Add VITE_GEMINI_API_KEY to your .env file.",
+    "missingKey": "Server API key is not configured. Add GEMINI_API_KEY in Vercel (or .env for vercel dev).",
     "tooShort": "Please write a bit more (at least 20 characters).",
     "generic": "Something went wrong during analysis. Please try again.",
     "invalid": "Could not process the analysis. Please try again."

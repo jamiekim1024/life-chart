@@ -43,7 +43,7 @@
   },
   "visitor": "방문자",
   "errors": {
-    "missingKey": "Gemini API 키가 설정되지 않았습니다. .env 파일에 VITE_GEMINI_API_KEY를 추가해 주세요.",
+    "missingKey": "서버 API 키가 설정되지 않았습니다. Vercel에 GEMINI_API_KEY를 추가해 주세요.",
     "tooShort": "이야기를 조금 더 길게 적어주세요 (20자 이상).",
     "generic": "분석 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.",
     "invalid": "분석 결과를 처리하지 못했습니다. 다시 시도해 주세요."
