@@ -5,7 +5,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 
-const MODEL = 'gemini-1.5-flash'
+const MODEL = 'gemini-1.5-flash-latest'
 
 /** Public song list (override via SONGS_SHEET_CSV_URL on Vercel). */
 const DEFAULT_SONGS_SHEET_CSV_URL =
@@ -246,14 +246,14 @@ function getClient(): GoogleGenerativeAI {
 
 function buildPrompt(story: string, lang: 'ko' | 'en'): string {
   const languageName = lang === 'ko' ? 'Korean' : 'English'
-  const moodList = MOODS.join(', ') // sad, hopeful, joyful, nostalgic only
+  const moodList = MOODS.join(', ')
 
   const labelRule =
     lang === 'ko'
       ? 'label: vivid Korean phrase for the life moment (no year prefix), like "호주 브리스번으로 이주, 새로운 시작을 꿈꾸던 시절" (max 55 chars)'
       : 'label: vivid English phrase for the life moment (no year prefix), like "moving abroad and daring to start over" (max 55 chars)'
 
-  return `You are a compassionate life coach and data analyst. Analyze the user's life story and respond ONLY with valid JSON (no markdown).
+  return `You are a compassionate life coach and data analyst. Analyze the user's life story and respond ONLY with valid JSON (no markdown, no code fences).
 
 CRITICAL: The user selected UI language is ${languageName}. Write ALL text fields (timeline labels, counseling, songReason) ONLY in ${languageName}. Do not mix languages.
 
@@ -298,7 +298,7 @@ async function runLifeAnalysis(
       model: MODEL,
       generationConfig: {
         temperature: 0.7,
-        responseMimeType: 'application/json',
+        // responseMimeType 제거 — gemini-1.5-flash-latest 호환성 문제 방지
       },
     })
 
