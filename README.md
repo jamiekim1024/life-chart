@@ -8,7 +8,7 @@ Turn your life story into an emotional stock-style chart with AI counseling, son
 - Vercel serverless API (`api/analyze.ts`, self-contained) for Gemini
 - Tailwind CSS v4 + shadcn-style UI primitives
 - Recharts
-- Google Gemini (`gemini-2.0-flash`, server-side only)
+- Google Gemini (`gemini-1.5-flash`, server-side only)
 - i18n (KO / EN)
 - CountAPI visitor counter
 - html-to-image + QR code for story cards

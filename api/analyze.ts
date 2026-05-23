@@ -5,7 +5,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 
-const MODEL = 'gemini-2.0-flash'
+const MODEL = 'gemini-1.5-flash'
 
 /** Public song list (override via SONGS_SHEET_CSV_URL on Vercel). */
 const DEFAULT_SONGS_SHEET_CSV_URL =
